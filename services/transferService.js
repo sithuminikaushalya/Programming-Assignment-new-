@@ -2,41 +2,44 @@ const Account = require('../models/account');
 const Transaction = require('../models/transaction');
 
 async function transfer(sourceAccountNumber, destinationAccountNumber, amount) {
-  const session = await Account.startSession();
-  session.startTransaction();
-  
   try {
-    const sourceAccount = await Account.findOne({ accountNumber: sourceAccountNumber }).session(session);
-    const destinationAccount = await Account.findOne({ accountNumber: destinationAccountNumber }).session(session);
+    // Find source and destination accounts
+    const sourceAccount = await Account.findOne({ accountNumber: sourceAccountNumber });
+    const destinationAccount = await Account.findOne({ accountNumber: destinationAccountNumber });
 
-    if (!sourceAccount || !destinationAccount) {
-      throw new Error('One or both accounts do not exist.');
+    // Check if both accounts exist
+    if (!sourceAccount) {
+      console.error(`Source account ${sourceAccountNumber} does not exist.`);
+      throw new Error('Source account does not exist.');
+    }
+    if (!destinationAccount) {
+      console.error(`Destination account ${destinationAccountNumber} does not exist.`);
+      throw new Error('Destination account does not exist.');
     }
 
+    // Check if source account has sufficient balance
     if (sourceAccount.balance < amount) {
       throw new Error('Insufficient funds in the source account.');
     }
 
+    // Update balances
     sourceAccount.balance -= amount;
     destinationAccount.balance += amount;
 
+    // Create and save transaction record
     const transaction = new Transaction({
       sourceAccountNumber,
       destinationAccountNumber,
       amount
     });
 
-    await sourceAccount.save({ session });
-    await destinationAccount.save({ session });
-    await transaction.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    await sourceAccount.save();
+    await destinationAccount.save();
+    await transaction.save();
 
     return transaction;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    console.error('Error processing transaction:', error);
     throw error;
   }
 }
