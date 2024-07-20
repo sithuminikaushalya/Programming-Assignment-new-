@@ -21,7 +21,4 @@ This is a simple RESTful API to perform transfers between accounts using Node.js
  ```sh
   node app.js
 
-   "sourceAccountNumber": "1001",
-   "destinationAccountNumber": "1002",
-   "amount": 200
- }
+  
